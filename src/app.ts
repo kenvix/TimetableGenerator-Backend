@@ -88,10 +88,13 @@ import {MarkdownWriter} from "./library/writer";
                         generatedSingleWeekDutyTimetable[day] = [];
 
                     generatedSingleWeekDutyTimetable[day][time] = minUser!.id;
+                    history.numStat!.set(minUser!.id, minUserDutyCount+1);
                 }
             });
         });
 
+        const writer = new MarkdownWriter(users);
+        await writer.write([{week: week, timetable: generatedSingleWeekDutyTimetable}], "DutyLog.md");
         console.info("FUCk");
 
     }));

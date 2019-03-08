@@ -27,7 +27,7 @@ export default class Tools {
     }
 
     public static range(start, border): Array<number> {
-        return Array.apply(0, Array(border-1))
+        return Array.apply(0, Array(border))
             .map(function (element, index) {
                 return index + start;
             });
