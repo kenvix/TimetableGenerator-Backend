@@ -2,10 +2,9 @@
 // Written by Kenvix <i@kenvix.com>
 //--------------------------------------------------
 
-import {ApplicationConfig, UserClass, UserTimetable} from "./library/interfaces";
+import {ApplicationConfig, DutyHistory, UserClass, UserTimetable} from "./library/interfaces";
 import * as path from "path";
 import * as fs from "fs";
-import * as yaml from "js-yaml";
 import {BuildConfig} from "./library/config";
 import * as process from "process";
 import "./library/Utils";
@@ -20,7 +19,7 @@ import Utils from "./library/utils";
         console.error(configPath + " not exist!!");
         process.exit(2);
     }
-    const config: ApplicationConfig = yaml.safeLoad(fs.readFileSync(configPath, "utf8"));
+    const config: ApplicationConfig = Utils.loadConfig(configPath);
 
     fs.readdir(currentDirectory, (async (fileReadErr, allFiles) => {
         if (fileReadErr)
@@ -49,6 +48,38 @@ import Utils from "./library/utils";
 
         await Utils.waitUntil(10, () => files.length == users.size);
 
+        let history: DutyHistory = Utils.getDutyHistory();
+
+        users.forEach(user => {
+            if (!history.numStat.has(user.id))
+                history.numStat.set(user.id, 0);
+        });
+
+        let week = 1;
+
+        Utils.range(0, 7).forEach(async day => {
+            Utils.range(0, 5).forEach(async time => {
+                let minUser: UserTimetable|null = null;
+                let minUserDutyCount = -1;
+
+                users.forEach((user, userId) => {
+                    const userClass: UserClass = user.classes[day][time];
+                    if (typeof userClass == "undefined" || userClass == null || userClass.weekList.indexOf(week) == -1) {
+                        const userDutyCount = <number>history.numStat!.get(userId);
+
+                        if (minUserDutyCount == -1 || userDutyCount < minUserDutyCount) {
+                            minUser = user;
+                            minUserDutyCount = userDutyCount;
+                        }
+                    }
+                });
+
+                if (minUser == null)
+                    throw new Error("There is no users available to generate!!!");
+
+
+            });
+        });
 
     }));
 })();
