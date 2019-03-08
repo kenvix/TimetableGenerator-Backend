@@ -7,7 +7,7 @@ import * as fs from "fs";
 import * as yaml from "js-yaml";
 import {BuildConfig} from "./config";
 
-export default class Utils {
+export default class Tools {
     private static config: ApplicationConfig;
     private static weekStartTime: number = -1;
 

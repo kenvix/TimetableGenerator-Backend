@@ -2,13 +2,19 @@
 // Written by Kenvix <i@kenvix.com>
 //--------------------------------------------------
 
-import {ApplicationConfig, DutyHistory, UserClass, UserTimetable} from "./library/interfaces";
+import {
+    ApplicationConfig,
+    DutyHistory,
+    GeneratedWeekDutyTimetable,
+    UserClass,
+    UserTimetable
+} from "./library/interfaces";
 import * as path from "path";
 import * as fs from "fs";
 import {BuildConfig} from "./library/config";
 import * as process from "process";
-import "./library/Utils";
-import Utils from "./library/utils";
+import Tools from "./library/tools";
+import {MarkdownWriter} from "./library/writer";
 
 (async () => {
     console.log("Timetable Generator Backend v1.0 by Kenvix");
@@ -19,7 +25,7 @@ import Utils from "./library/utils";
         console.error(configPath + " not exist!!");
         process.exit(2);
     }
-    const config: ApplicationConfig = Utils.loadConfig(configPath);
+    const config: ApplicationConfig = Tools.loadConfig(configPath);
 
     fs.readdir(currentDirectory, (async (fileReadErr, allFiles) => {
         if (fileReadErr)
@@ -46,9 +52,9 @@ import Utils from "./library/utils";
             });
         });
 
-        await Utils.waitUntil(10, () => files.length == users.size);
+        await Tools.waitUntil(10, () => files.length == users.size);
 
-        let history: DutyHistory = Utils.getDutyHistory();
+        let history: DutyHistory = Tools.getDutyHistory();
 
         users.forEach(user => {
             if (!history.numStat.has(user.id))
@@ -56,9 +62,10 @@ import Utils from "./library/utils";
         });
 
         let week = 1;
+        let generatedSingleWeekDutyTimetable: GeneratedWeekDutyTimetable = [];
 
-        Utils.range(0, 7).forEach(async day => {
-            Utils.range(0, 5).forEach(async time => {
+        Tools.range(0, 7).forEach(async day => {
+            Tools.range(0, 5).forEach(async time => {
                 let minUser: UserTimetable|null = null;
                 let minUserDutyCount = -1;
 
@@ -74,12 +81,18 @@ import Utils from "./library/utils";
                     }
                 });
 
-                if (minUser == null)
-                    throw new Error("There is no users available to generate!!!");
+                if (minUser == null) {
+                    console.info("There is no users available for Day " + day + " Time " + time);
+                } else {
+                    if (typeof generatedSingleWeekDutyTimetable[day] == "undefined")
+                        generatedSingleWeekDutyTimetable[day] = [];
 
-
+                    generatedSingleWeekDutyTimetable[day][time] = minUser!.id;
+                }
             });
         });
+
+        console.info("FUCk");
 
     }));
 })();

@@ -27,3 +27,10 @@ export interface ApplicationConfig {
         startAt: string
     }
 }
+
+export type GeneratedWeekDutyTimetable = string[][];
+
+export interface GeneratedWeekDuty {
+    week: number,
+    timetable: GeneratedWeekDutyTimetable
+}
