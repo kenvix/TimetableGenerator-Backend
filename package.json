@@ -1,0 +1,20 @@
+{
+  "name": "timetable-generator-backend",
+  "version": "1.0.0",
+  "main": "output/app.js",
+  "repository": "https://github.com/kenvix/TimetableGenerator-Backend",
+  "author": "Kenvix <i@kenvix.com>",
+  "private": true,
+  "scripts": {
+    "start": "node ./output/app.js",
+    "build": "tsc -p ./src"
+  },
+  "dependencies": {
+    "js-yaml": "^3.12.2",
+    "tslib": "^1.9.3",
+    "typescript": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^6.0.87"
+  }
+}
