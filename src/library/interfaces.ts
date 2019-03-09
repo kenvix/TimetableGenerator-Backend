@@ -25,6 +25,9 @@ export interface ApplicationConfig {
         start: number,
         end: number,
         startAt: string
+    },
+    generate: {
+        num: number
     }
 }
 

@@ -61,7 +61,7 @@ import {MarkdownWriter} from "./library/writer";
                 history.numStat.set(user.id, 0);
         });
 
-        let week = 1;
+        let week = Tools.getWeek();
         let generatedSingleWeekDutyTimetable: GeneratedWeekDutyTimetable = [];
 
         Tools.range(0, 7).forEach(async day => {
@@ -92,6 +92,7 @@ import {MarkdownWriter} from "./library/writer";
                 }
             });
         });
+
 
         const writer = new MarkdownWriter(users);
         await writer.write([{week: week, timetable: generatedSingleWeekDutyTimetable}], "DutyLog.md");
