@@ -4,7 +4,7 @@
 
 import {
     ApplicationConfig,
-    DutyHistory,
+    DutyHistory, GeneratedWeekDuty,
     GeneratedWeekDutyTimetable,
     UserClass,
     UserTimetable
@@ -19,6 +19,7 @@ import {MarkdownWriter} from "./library/writer";
 (async () => {
     console.log("Timetable Generator Backend v1.0 by Kenvix");
     const currentDirectory = path.resolve(".");
+    const arugments = BuildConfig.programArugments.parse(process.argv);
 
     const configPath = path.join(__dirname, "config.yml");
     if (!fs.existsSync(configPath)) {
@@ -61,41 +62,50 @@ import {MarkdownWriter} from "./library/writer";
                 history.numStat.set(user.id, 0);
         });
 
-        let week = Tools.getWeek();
-        let generatedSingleWeekDutyTimetable: GeneratedWeekDutyTimetable = [];
+        let currentWeek = Tools.getWeek();
+        let generateResult: GeneratedWeekDuty[] = [];
 
-        Tools.range(0, 7).forEach(async day => {
-            Tools.range(0, 5).forEach(async time => {
-                let minUser: UserTimetable|null = null;
-                let minUserDutyCount = -1;
+        Tools.range(currentWeek, config.generate.num >= config.week.end - currentWeek ? config.week.end : config.generate.num).forEach(week => {
+            let generatedSingleWeekDutyTimetable: GeneratedWeekDutyTimetable = [];
 
-                users.forEach((user, userId) => {
-                    const userClass: UserClass = user.classes[day][time];
-                    if (typeof userClass == "undefined" || userClass == null || userClass.weekList.indexOf(week) == -1) {
-                        const userDutyCount = <number>history.numStat!.get(userId);
+            Tools.range(0, 7).forEach(async day => {
+                Tools.range(0, 5).forEach(async time => {
+                    let minUser: UserTimetable|null = null;
+                    let minUserDutyCount = -1;
 
-                        if (minUserDutyCount == -1 || userDutyCount < minUserDutyCount) {
-                            minUser = user;
-                            minUserDutyCount = userDutyCount;
+                    users.forEach((user, userId) => {
+                        const userClass: UserClass = user.classes[day][time];
+                        if (typeof userClass == "undefined" || userClass == null || userClass.weekList.indexOf(week) == -1) {
+                            const userDutyCount = <number>history.numStat!.get(userId);
+
+                            if (minUserDutyCount == -1 || userDutyCount < minUserDutyCount) {
+                                minUser = user;
+                                minUserDutyCount = userDutyCount;
+                            }
                         }
+                    });
+
+                    if (minUser == null) {
+                        console.info("There is no users available for Day " + day + " Time " + time);
+                    } else {
+                        if (typeof generatedSingleWeekDutyTimetable[day] == "undefined")
+                            generatedSingleWeekDutyTimetable[day] = [];
+
+                        generatedSingleWeekDutyTimetable[day][time] = minUser!.id;
+                        history.numStat!.set(minUser!.id, minUserDutyCount+1);
                     }
                 });
-
-                if (minUser == null) {
-                    console.info("There is no users available for Day " + day + " Time " + time);
-                } else {
-                    if (typeof generatedSingleWeekDutyTimetable[day] == "undefined")
-                        generatedSingleWeekDutyTimetable[day] = [];
-
-                    generatedSingleWeekDutyTimetable[day][time] = minUser!.id;
-                    history.numStat!.set(minUser!.id, minUserDutyCount+1);
-                }
             });
+
+            generateResult.push({week: week, timetable: generatedSingleWeekDutyTimetable});
         });
 
+        if (!arugments.noHistory) {
+
+        }
 
         const writer = new MarkdownWriter(users);
-        await writer.write([{week: week, timetable: generatedSingleWeekDutyTimetable}], "DutyLog.md");
+        await writer.write(generateResult, "DutyLog.md");
         console.info("FUCk");
 
     }));
