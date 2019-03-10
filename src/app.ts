@@ -47,9 +47,17 @@ import {MarkdownWriter} from "./library/writer";
                 if (userReadErr)
                     throw userReadErr;
 
-                const userTimetable: UserTimetable = JSON.parse(userFileString);
-                console.debug("Loaded: " + userClassFile + " -> " + userTimetable.id + ":" + userTimetable.name);
-                users.set(userTimetable.id, userTimetable);
+                if (userFileString.charCodeAt(0) == 0xFEFF) {
+                    console.warn(userClassFile + " is a illegal modified JSON. ILLEGAL BOM 0xFEFF DETECTED!!!!");
+                    userFileString = userFileString.substring(1);
+                }
+                try {
+                    const userTimetable: UserTimetable = JSON.parse(userFileString);
+                    console.debug("Loaded: " + userClassFile + " -> " + userTimetable.id + ":" + userTimetable.name);
+                    users.set(userTimetable.id, userTimetable);
+                } catch(e) {
+                    console.error(userClassFile + " is illegal. SKIP!: " + e);
+                }
             });
         });
 
