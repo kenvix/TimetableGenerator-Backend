@@ -2,7 +2,7 @@
 // Written by Kenvix <i@kenvix.com>
 //--------------------------------------------------
 
-import {ApplicationConfig, DutyHistory} from "./interfaces";
+import {ApplicationConfig, DutyHistory, UserTimetable} from "./interfaces";
 import * as fs from "fs";
 import * as yaml from "js-yaml";
 import {BuildConfig} from "./config";
@@ -55,5 +55,9 @@ export default class Tools {
 
         const span = time - this.weekStartTime;
         return Math.ceil(span / 1000 / 604800);
+    }
+
+    public static getUserClassFileName(userTimetable: UserTimetable) {
+        return userTimetable.id + "-" + userTimetable.name + ".json";
     }
 }
