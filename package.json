@@ -6,9 +6,9 @@
   "author": "Kenvix <i@kenvix.com>",
   "private": true,
   "scripts": {
-    "start": "cd output && cross-env NODE_DEBUG=net NODE_ENV=development node ./app.js",
-    "check": "cd output && cross-env NODE_DEBUG=net NODE_ENV=development node ./app.js --check --strict",
-    "build": "cross-env NODE_ENV=development node ./output/node_modules/typescript/lib/tsc.js -p ./src"
+    "start": "cd output && node ./app.js",
+    "check": "cd output && node ./app.js --check --strict",
+    "build": "node ./output/node_modules/typescript/lib/tsc.js -p ./src"
   },
   "dependencies": {
     "commander": "^2.19.0",

@@ -1,5 +1,4 @@
 node_modules
-*-*.json
 output
 .idea
 yarn-error.log
