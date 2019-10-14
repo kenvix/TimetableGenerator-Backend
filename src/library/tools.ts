@@ -17,7 +17,7 @@ export default class Tools {
 
     public static async waitUntil(interval: number, condition: () => boolean): Promise<void> {
         return new Promise(resolve => {
-            setTimeout(() => {
+            setInterval(() => {
                 if (condition()) {
                     clearTimeout();
                     resolve();

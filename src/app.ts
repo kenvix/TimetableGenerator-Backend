@@ -15,6 +15,7 @@ import {BuildConfig} from "./library/config";
 import * as process from "process";
 import Tools from "./library/tools";
 import {MarkdownWriter} from "./library/writer";
+import {InvalidFormatError, MinorInvalidFormatError} from "./library/errors";
 
 (async () => {
     console.log("Timetable Generator Backend v1.0 by Kenvix");
@@ -27,9 +28,12 @@ import {MarkdownWriter} from "./library/writer";
         process.exit(2);
     }
     const config: ApplicationConfig = Tools.loadConfig(configPath);
+    const useCheckMode: boolean = appArguments.check != undefined && appArguments.check;
 
-    if (appArguments.check)
-        console.info("Working mode: Check mode");
+    if (useCheckMode)
+        console.info("Working in Syntax Check mode");
+    else
+        console.info("Working in Generate mode");
 
     if (appArguments.strict)
         console.info("Strict mode enabled");
@@ -49,7 +53,7 @@ import {MarkdownWriter} from "./library/writer";
 
             let users: Map<string, UserTimetable> = new Map();
 
-            files.forEach(async userClassFile => {
+            for (const userClassFile of files) {
                 fs.readFile(path.resolve(currentDirectory, userClassFile), "utf-8", async (userReadErr, userFileString) => {
                     if (userReadErr)
                         throw userReadErr;
@@ -58,8 +62,7 @@ import {MarkdownWriter} from "./library/writer";
                         const errorPrompt = userClassFile + " is a illegal modified JSON. ILLEGAL BOM 0xFEFF DETECTED!!!!";
 
                         if (appArguments.strict) {
-                            console.error(errorPrompt);
-                            process.exit(102);
+                            throw new MinorInvalidFormatError("errorPrompt");
                         } else {
                             console.warn(errorPrompt);
                             userFileString = userFileString.substring(1);
@@ -69,36 +72,46 @@ import {MarkdownWriter} from "./library/writer";
                         const userTimetable: UserTimetable = JSON.parse(userFileString);
                         console.debug("Loaded: " + userClassFile + " -> " + userTimetable.id + ":" + userTimetable.name);
 
-                        if (appArguments.check) {
+                        if (useCheckMode) {
                             const nameCheckExp = new RegExp("[^a-zA-Z0-9\u4e00-\u9fef]");
                             if (nameCheckExp.test(userTimetable.name)) {
-                                console.error("Detected illegal characters on username: " + userTimetable.name);
-                                process.exit(110);
+                                throw new InvalidFormatError("Detected illegal characters on username: " + userTimetable.name, 111);
                             }
 
                             if (userClassFile != Tools.getUserClassFileName(userTimetable)) {
-                                console.error("Username is NOT match file name rule: " + userTimetable.name);
-                                process.exit(111);
+                                throw new InvalidFormatError("Username is NOT match file name rule: " + userTimetable.name, 112);
                             }
+                        }
+
+                        if (users.has(userTimetable.id)) {
+                            throw new InvalidFormatError(`Fuck! User ID Already exists!! [${userTimetable.id} ${userTimetable.name}] CONFLICT [${users.get(userTimetable.id)!!.name}]`, 112);
                         }
 
                         users.set(userTimetable.id, userTimetable);
                     } catch(e) {
-                        if (appArguments.strict) {
-                            console.error(userClassFile + " is invalid");
-                            console.error(e);
-                            process.exit(101);
-                        } else {
+                        if (appArguments.strict && e instanceof MinorInvalidFormatError) {
+                            console.error(userClassFile + " have minor errors.");
+                            console.error(e.message);
+                            process.exit(e.code == 0 ? 101 : e.code);
+                        }
+
+                        if (e instanceof InvalidFormatError) {
+                            console.error(userClassFile + " have major errors.");
+                            console.error(e.message);
+                            process.exit(e.code == 0 ? 110 : e.code);
+                        }
+
+                        else {
                             console.error(userClassFile + " is illegal. SKIP!: " + e);
                         }
                     }
                 });
-            });
+            }
 
-            await Tools.waitUntil(10, () => files.length == users.size);
+            await Tools.waitUntil(10, () => files != null && files.length == users.size);
             let generateResult: GeneratedWeekDuty[] = [];
 
-            if (!appArguments.check) {
+            if (!useCheckMode) {
                 let history: DutyHistory = Tools.getDutyHistory();
 
                 users.forEach(user => {
@@ -112,7 +125,7 @@ import {MarkdownWriter} from "./library/writer";
                     let generatedSingleWeekDutyTimetable: GeneratedWeekDutyTimetable = [];
 
                     Tools.range(0, 7).forEach(async day => {
-                        Tools.range(0, 5).forEach(async time => {
+                        for (const time of Tools.range(0, 5)) {
                             let minUser: UserTimetable|null = null;
                             let minUserDutyCount = -1;
 
@@ -137,24 +150,25 @@ import {MarkdownWriter} from "./library/writer";
                                 generatedSingleWeekDutyTimetable[day][time] = minUser!.id;
                                 history.numStat!.set(minUser!.id, minUserDutyCount+1);
                             }
-                        });
+                        }
                     });
 
                     generateResult.push({week: week, timetable: generatedSingleWeekDutyTimetable});
                 });
             }
 
-            if (appArguments.check) {
+            if (useCheckMode) {
                 console.info("Check json operation completed");
                 process.exit(0);
             } else {
+                console.info("Writing Dutylog Result");
                 if (!appArguments.noHistory) {
 
                 }
 
                 const writer = new MarkdownWriter(users);
                 await writer.write(generateResult, "DutyLog.md");
-                console.info("Write Operation completed");
+                console.info("Write Operation completed. Saved to DutyLog.md");
                 process.exit(0);
             }
         } catch (e) {
