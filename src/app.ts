@@ -25,6 +25,7 @@ import {InvalidFormatError, MinorInvalidFormatError} from "./library/errors";
     const configPath = path.join(__dirname, "config.yml");
     if (!fs.existsSync(configPath)) {
         console.error(configPath + " not exist!!");
+        console.error("Copy it from dutylog directory.");
         process.exit(2);
     }
     const config: ApplicationConfig = Tools.loadConfig(configPath);
@@ -38,7 +39,8 @@ import {InvalidFormatError, MinorInvalidFormatError} from "./library/errors";
     if (appArguments.strict)
         console.info("Strict mode enabled");
 
-    fs.readdir(currentDirectory, (async (fileReadErr, allFiles) => {
+    const scanFromDirectory = path.resolve(config.generate.findJsonFrom);
+    fs.readdir(scanFromDirectory, (async (fileReadErr, allFiles) => {
         try {
             if (fileReadErr)
                 throw fileReadErr;
@@ -46,7 +48,7 @@ import {InvalidFormatError, MinorInvalidFormatError} from "./library/errors";
             const matchFileRegex = new RegExp(BuildConfig.userClassFileNameRule);
             const files = allFiles.filter(filename => matchFileRegex.test(filename));
 
-            console.info("Loaded user jsons: " + files.length);
+            console.info(`Loading user jsons ${files.length} from ${scanFromDirectory}`);
 
             if (!fs.existsSync(BuildConfig.historyFile))
                 fs.writeFileSync(BuildConfig.historyFile, "{}");
@@ -54,7 +56,7 @@ import {InvalidFormatError, MinorInvalidFormatError} from "./library/errors";
             let users: Map<string, UserTimetable> = new Map();
 
             for (const userClassFile of files) {
-                fs.readFile(path.resolve(currentDirectory, userClassFile), "utf-8", async (userReadErr, userFileString) => {
+                fs.readFile(path.resolve(scanFromDirectory, userClassFile), "utf-8", async (userReadErr, userFileString) => {
                     if (userReadErr)
                         throw userReadErr;
 
@@ -109,9 +111,16 @@ import {InvalidFormatError, MinorInvalidFormatError} from "./library/errors";
             }
 
             await Tools.waitUntil(10, () => files != null && files.length == users.size);
+
             let generateResult: GeneratedWeekDuty[] = [];
 
             if (!useCheckMode) {
+                if (users.size <= 0) {
+                    console.error("No users to generate");
+                    console.error(`Currently we scan from ${scanFromDirectory}, is it right?`);
+                    process.exit(120);
+                }
+
                 let history: DutyHistory = Tools.getDutyHistory();
 
                 users.forEach(user => {

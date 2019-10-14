@@ -1,6 +1,11 @@
 week:
-  start: 1
-  startAt: 2019-02-25
-  end: 18
+  # 值日开始的周
+  start: 7
+  # 值日开始的日期
+  startAt: 2019-10-15
+  # 值日结束的周
+  end: 20
 generate:
+  # 从以下路径加载值日表 json
+  findJsonFrom: ../..
   num: 3

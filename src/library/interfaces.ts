@@ -27,6 +27,7 @@ export interface ApplicationConfig {
         startAt: string
     },
     generate: {
+        findJsonFrom: string,
         num: number
     }
 }
